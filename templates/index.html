@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h1 class="h4 mb-3">Add a Task</h1>
+        <form id="addTaskForm" class="row gy-2 gx-2">
+          <div class="col-12">
+            <label for="title" class="form-label visually-hidden">Task</label>
+            <input class="form-control form-control-lg" id="title" name="title" type="text" placeholder="e.g., Finish Flask project" required />
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-primary btn-lg" type="submit">Add</button>
+          </div>
+        </form>
+        <div id="alert" class="alert alert-danger d-none mt-3" role="alert"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h5 m-0">Your Tasks</h2>
+          <span class="badge text-bg-secondary" id="taskCount">{{ tasks|length }}</span>
+        </div>
+        <ul id="taskList" class="list-group list-group-flush">
+          {% for task in tasks %}
+            {% include '_task_item.html' %}
+          {% else %}
+            <li class="list-group-item text-muted" id="emptyState">No tasks yet — add one above.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const addForm = document.getElementById('addTaskForm');
+  const alertBox = document.getElementById('alert');
+  const taskList = document.getElementById('taskList');
+  const taskCount = document.getElementById('taskCount');
+
+  function setError(msg) {
+    alertBox.textContent = msg;
+    alertBox.classList.remove('d-none');
+  }
+  function clearError() {
+    alertBox.classList.add('d-none');
+    alertBox.textContent = '';
+  }
+
+  addForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError();
+    const formData = new FormData(addForm);
+    try {
+      const data = await postForm('{{ url_for("add_task") }}', formData);
+      // Remove empty state if present
+      const empty = document.getElementById('emptyState');
+      if (empty) empty.remove();
+      // Prepend new task
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+      li.innerHTML = data.task_html;
+      // Replace the LI wrapper with its inner content
+      taskList.insertAdjacentHTML('afterbegin', data.task_html);
+      // Update counter
+      taskCount.textContent = parseInt(taskCount.textContent, 10) + 1;
+      // Clear input
+      addForm.reset();
+      document.getElementById('title').focus();
+    } catch (err) {
+      setError(err.message);
+    }
+  });
+
+  taskList.addEventListener('click', async (e) => {
+    // Toggle complete
+    if (e.target.closest('[data-action="complete"]')) {
+      const btn = e.target.closest('[data-action="complete"]');
+      const id = btn.dataset.id;
+      try {
+        const data = await postJSON(`/complete/${id}`);
+        const item = document.getElementById(`task-${id}`);
+        if (item) {
+          item.outerHTML = data.task_html;
+        }
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+
+    // Delete
+    if (e.target.closest('[data-action="delete"]')) {
+      const btn = e.target.closest('[data-action="delete"]');
+      const id = btn.dataset.id;
+      try {
+        await postJSON(`/delete/${id}`);
+        const item = document.getElementById(`task-${id}`);
+        if (item) {
+          item.remove();
+          taskCount.textContent = Math.max(0, parseInt(taskCount.textContent, 10) - 1);
+        }
+        if (!taskList.querySelector('li')) {
+          taskList.insertAdjacentHTML('beforeend', '<li class="list-group-item text-muted" id="emptyState">No tasks yet — add one above.</li>');
+        }
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  });
+</script>
+{% endblock %}
