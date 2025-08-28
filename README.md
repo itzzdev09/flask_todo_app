@@ -118,26 +118,3 @@ curl -X POST http://127.0.0.1:5000/delete/1
 
 ---
 
-## Screenshots
-
-Once the app is running locally, take screenshots of:
-- Home page with the add form
-- Task list showing completed tasks
-- Any error or empty state
-
----
-
-## Week‑wise Plan Mapping
-
-- **Week 1**: Flask basics, routing, templates (`index`, forms).
-- **Week 2**: Add/Delete/Complete routes; real‑time updates via AJAX; in‑memory stub can be done first (not included here since DB is ready).
-- **Mid Review**: Core features & live UI updates ✅
-- **Week 3**: SQLite persistence & Bootstrap styling ✅
-- **Week 4**: Final touches, testing, optional deploy, documentation ✅
-
----
-
-## Notes
-
-- This app keeps the design intentionally minimal and clean.
-- If you need a pure in‑memory version for Week 2, duplicate `app.py` and swap the DB calls with a Python list; the front‑end can remain the same.
