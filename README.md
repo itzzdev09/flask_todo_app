@@ -118,6 +118,14 @@ curl -X POST http://127.0.0.1:5000/delete/1
 
 ---
 
+## Screenshots
+
+Once the app is running locally, take screenshots of:
+- Home page with the add form
+- Task list showing completed tasks
+- Any error or empty state
+
+---
 
 ## Week‑wise Plan Mapping
 
