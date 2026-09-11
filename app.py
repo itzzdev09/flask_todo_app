@@ -1,3 +1,4 @@
+import click
 from flask import Flask, render_template, request, redirect, url_for, jsonify, abort
 from db import get_db, close_db, init_db
 import os
@@ -5,9 +6,14 @@ import os
 def create_app(test_config=None):
     app = Flask(__name__)
     app.config.from_mapping(
-        SECRET_KEY='dev',
+        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
         DATABASE=os.path.join(app.instance_path if app.instance_path else app.root_path, 'todo.sqlite'),
     )
+
+    # test_config was accepted and then ignored, so a test could not point the
+    # app at a temporary database.
+    if test_config is not None:
+        app.config.update(test_config)
 
     # Ensure the instance folder exists
     try:
@@ -71,11 +77,17 @@ def create_app(test_config=None):
             return jsonify({'ok': False, 'error': 'Task not found'}), 404
         return jsonify({'ok': True, 'task_id': task_id})
 
-    # Utility route to (re)initialize DB explicitly
-    @app.post('/init-db')
-    def route_init_db():
+    # Re-initialising the database runs schema.sql, which begins with
+    # "DROP TABLE IF EXISTS tasks". Exposing that over HTTP meant any
+    # unauthenticated caller could delete every task with a single POST.
+    # It is a CLI command instead, which is where the Flask tutorial this app
+    # follows puts it. Routine first-run setup is already handled by
+    # _ensure_db above, so nothing in the request path depends on it.
+    @app.cli.command('init-db')
+    def init_db_command():
+        """Drop and recreate the tasks table. Destructive."""
         init_db()
-        return jsonify({'ok': True})
+        click.echo('Initialised the database.')
 
     return app
 
